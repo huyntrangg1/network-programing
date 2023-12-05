@@ -1,61 +1,53 @@
-import java.io.*;
+
 import java.math.BigInteger;
-import java.net.ServerSocket;
-import java.net.Socket;
+ import java.io.IOException;
+ import java.net.DatagramPacket;
+ import java.net.DatagramSocket;
 
 public class Server {
     public static void main(String[] args) throws IOException {
-        int port = 12110;
+        int port = 12110;  // Port based on the last 3 digits of the student ID
 
-        ServerSocket serverSocket = new ServerSocket(port);
+        DatagramSocket serverSocket = new DatagramSocket(port);
         System.out.println("Server is listening on port " + port);
 
+        byte[] receiveData = new byte[1024];
+
         while (true) {
-            Socket clientSocket = serverSocket.accept();
-            System.out.println("Accepted connection from " + clientSocket.getInetAddress());
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            serverSocket.receive(receivePacket);
 
-            Thread clientThread = new ServerThread(clientSocket);
-            clientThread.start();
-        }
-    }
-}
+            String clientMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
-class ServerThread extends Thread {
-    private Socket socket;
+            // Process the first message
+            BigInteger studentIDValue = new BigInteger(clientMessage);
+            BigInteger result = studentIDValue.multiply(BigInteger.valueOf(2));
+            sendData(result.toString().getBytes(), receivePacket);
 
-    public ServerThread(Socket socket) {
-        this.socket = socket;
-    }
-
-    @Override
-    public void run() {
-        try {
-            BufferedReader inFromClient = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            DataOutputStream outToClient = new DataOutputStream(socket.getOutputStream());
-
-            String studentID = inFromClient.readLine();
-            BigInteger studentIDValue = new BigInteger(studentID);
-
-            BigInteger result = studentIDValue.multiply(BigInteger.valueOf(3));
-            outToClient.writeBytes(result.toString() + "\n");
-
+            // Process subsequent messages in a loop
             while (true) {
-                String message = inFromClient.readLine();
+                serverSocket.receive(receivePacket);
+                clientMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
-                if (isPositiveInteger(message)) {
-                    BigInteger num = new BigInteger(message);
-                    BigInteger cube = num.pow(3);
-                    outToClient.writeBytes(cube.toString() + "\n");
+                if (isPositiveInteger(clientMessage)) {
+                    BigInteger num = new BigInteger(clientMessage);
+                    BigInteger square = num.pow(2);
+                    sendData(square.toString().getBytes(), receivePacket);
                 } else {
-                    outToClient.writeBytes(message + "\n");
+                    sendData(clientMessage.getBytes(), receivePacket);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    private boolean isPositiveInteger(String str) {
+    private static void sendData(byte[] data, DatagramPacket receivePacket) throws IOException {
+        DatagramSocket serverSocket = new DatagramSocket();
+        DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), receivePacket.getPort());
+        serverSocket.send(sendPacket);
+        serverSocket.close();
+    }
+
+    private static boolean isPositiveInteger(String str) {
         try {
             BigInteger num = new BigInteger(str);
             return num.compareTo(BigInteger.ZERO) > 0;
