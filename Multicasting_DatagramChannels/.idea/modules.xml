@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MulticastSocket.iml" filepath="$PROJECT_DIR$/MulticastSocket.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Multicasting_DatagramChannels.iml" filepath="$PROJECT_DIR$/Multicasting_DatagramChannels.iml" />
     </modules>
   </component>
 </project>
