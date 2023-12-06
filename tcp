@@ -1,0 +1,111 @@
+import java.io.*;
+import java.math.BigInteger;
+import java.net.*;
+
+public class UDPServer {
+    public static void main(String[] args) {
+        // Replace 'abc' with the last three digits of your student ID
+        int port = 210;
+
+        try (DatagramSocket serverSocket = new DatagramSocket(port)) {
+            System.out.println("Server is listening on port " + port);
+
+            while (true) {
+                byte[] receiveData = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                serverSocket.receive(receivePacket);
+
+                InetAddress clientAddress = receivePacket.getAddress();
+                int clientPort = receivePacket.getPort();
+                String clientMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+                System.out.println("Received from client: " + clientMessage);
+
+                // Process client's message
+                String serverResponse = processClientMessage(clientMessage);
+
+                // Send response back to client
+                byte[] sendData = serverResponse.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, clientAddress, clientPort);
+                serverSocket.send(sendPacket);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String processClientMessage(String message) {
+        try {
+            BigInteger clientValue = new BigInteger(message);
+
+            // Calculate 2 times of [Student_ID]
+            if (clientValue.compareTo(BigInteger.ZERO) >= 0) {
+                BigInteger result = clientValue.multiply(BigInteger.valueOf(2));
+                return result.toString();
+            }
+
+            // If the message is not a positive integer, send it back
+            return message;
+        } catch (NumberFormatException e) {
+            // If the message is not a valid number, send it back
+            return message;
+        }
+    }
+}
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.*;
+
+public class UDPClient {
+    public static void main(String[] args) {
+        // Replace 'abc' with the last three digits of your student ID
+        int serverPort = 210;
+
+        try (DatagramSocket clientSocket = new DatagramSocket()) {
+            InetAddress serverAddress = InetAddress.getByName("localhost");
+
+            // Step 1: Send [Student_ID] to server
+            String studentID = "2001040210"; // Replace with your student ID
+            sendUDPMessage(clientSocket, serverAddress, serverPort, studentID);
+
+            // Step 2: Receive and print the 1st reply from server
+            String serverResponse = receiveUDPMessage(clientSocket);
+            System.out.println("Received from server: " + serverResponse);
+
+            // Step 3: Continuously read from keyboard and communicate with the server
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+            while (true) {
+                System.out.print("Enter a message: ");
+                String userInput = reader.readLine();
+
+                // Send user input to the server
+                sendUDPMessage(clientSocket, serverAddress, serverPort, userInput);
+
+                // Receive and print the response from the server
+                String response = receiveUDPMessage(clientSocket);
+                System.out.println("Received from server: " + response);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void sendUDPMessage(DatagramSocket socket, InetAddress serverAddress, int serverPort, String message) throws IOException {
+        byte[] sendData = message.getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
+        socket.send(sendPacket);
+    }
+
+    private static String receiveUDPMessage(DatagramSocket socket) throws IOException {
+        byte[] receiveData = new byte[1024];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        socket.receive(receivePacket);
+
+        return new String(receivePacket.getData(), 0, receivePacket.getLength());
+    }
+}
