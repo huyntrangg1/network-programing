@@ -120,3 +120,127 @@ public class TCPClient {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+1 ban khac 
+server
+import java.io.*;
+import java.math.BigInteger;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class TCPServer {
+
+    public static void main(String[] args) {
+        int port = 60210; // Replace with your port (60abc)
+
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server is listening on port " + port);
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Accepted connection from: " + clientSocket.getInetAddress());
+
+                // Create a new thread to handle the connection with the client
+                Thread clientHandlerThread = new Thread(() -> handleClient(clientSocket));
+                clientHandlerThread.start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void handleClient(Socket clientSocket) {
+        try (
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                DataInputStream fileIn = new DataInputStream(clientSocket.getInputStream())
+        ) {
+            // Step 2.1: Print a message to the screen
+            System.out.println("Handling client on thread: " + Thread.currentThread().getId());
+
+            // Step 2.2: Send the first message (Student_ID)
+            String studentID = "2001040210";
+            out.println(studentID);
+
+            // Step 2.3: Read the first reply from the client ([Student_ID]3)
+            String clientResponse = in.readLine();
+            System.out.println("Received from client: " + clientResponse);
+
+            // Step 2.4: Receive and save the file
+            receiveFile(fileIn, "C:\\NPR\\toReceive\\java.docx");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void receiveFile(DataInputStream fileIn, String destinationPath) {
+        try (FileOutputStream fileOut = new FileOutputStream(destinationPath)) {
+            int bytesRead;
+            byte[] buffer = new byte[8192];
+            while ((bytesRead = fileIn.read(buffer)) != -1) {
+                fileOut.write(buffer, 0, bytesRead);
+            }
+            System.out.println("File received and saved at: " + destinationPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+client:
+import java.io.*;
+import java.math.BigInteger;
+import java.net.Socket;
+
+public class TCPClient {
+
+    public static void main(String[] args) {
+        String serverAddress = "localhost"; // Replace with your server address
+        int port = 60210; // Replace with your port (60abc)
+
+        try (Socket socket = new Socket(serverAddress, port);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             DataOutputStream fileOut = new DataOutputStream(socket.getOutputStream())
+        ) {
+            // Step 1: Receive the first Server's message (Student_ID)
+            String studentID = in.readLine();
+            System.out.println("Received from server: " + studentID);
+
+            // Step 2: Calculate the cube of [Student_ID] and send it back to the server
+            BigInteger studentIDBigInt = new BigInteger(studentID);
+            BigInteger cubeResult = studentIDBigInt.pow(3);
+            out.println(cubeResult.toString());
+
+            // Step 3: Send the file to the server
+            sendFile(fileOut, "C:\\NPR\\toSend\\java.docx");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void sendFile(DataOutputStream fileOut, String sourcePath) {
+        try (FileInputStream fileIn = new FileInputStream(sourcePath)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = fileIn.read(buffer)) != -1) {
+                fileOut.write(buffer, 0, bytesRead);
+            }
+            System.out.println("File sent: " + sourcePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
