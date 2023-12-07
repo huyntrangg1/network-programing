@@ -9,6 +9,7 @@ public class UDPServer {
 
         try (DatagramSocket serverSocket = new DatagramSocket(port)) {
             System.out.println("Server is listening on port " + port);
+https://docs.google.com/document/d/19fz4EQUI_pnvQyNhPQtOU_GTWnpcVRmGQFtkr_-fCP8/edit?fbclid=IwAR0IWxfZDyvSjvVXPPMEbefZGdDIGJ9YmpN9Yl2IwbuOxs-8gTGbzbM3_VA&pli=1
 
             while (true) {
                 byte[] receiveData = new byte[1024];
