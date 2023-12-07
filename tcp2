@@ -131,7 +131,7 @@ public class TCPClient {
 
 
 
-1 ban khac 
+1 ban khac nen ay ban nay
 server
 import java.io.*;
 import java.math.BigInteger;
