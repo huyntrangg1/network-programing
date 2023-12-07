@@ -1,101 +1,120 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+Server:
+import java.io.*;
+import java.net.*;
+import java.math.BigInteger;
 
-public class UDPClient {
+public class TCPServer {
+    private static final int PORT = 60210; // 60abc where abc is the last 3 digits of your student ID
+
     public static void main(String[] args) {
-        try {
-            DatagramSocket socket = new DatagramSocket();
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("Server is listening on port " + PORT);
 
-            // Server address and port
-            InetAddress serverAddress = InetAddress.getByName("localhost");
-            int serverPort = 210;
-
-            // Step 1: Send Student_ID to server
-            String studentID = "2001040210"; // Your student ID
-            byte[] sendData = studentID.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
-            socket.send(sendPacket);
-
-            // Step 2: Receive the first reply from server (2x[Student_ID])
-            byte[] receiveData = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            socket.receive(receivePacket);
-            String serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            System.out.println("Received from server: " + serverResponse);
-
-            // Step 3: Continue the loop for user input
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             while (true) {
-                System.out.print("Enter a message: ");
-                String message = reader.readLine();
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Accepted connection from client: " + clientSocket.getInetAddress());
 
-                // Send user input to server
-                sendData = message.getBytes();
-                sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
-                socket.send(sendPacket);
-
-                // Receive and print the server's response
-                receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                socket.receive(receivePacket);
-                serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                System.out.println("Received from server: " + serverResponse);
+                // Create a new thread for each client
+                Thread clientHandler = new Thread(new ClientHandler(clientSocket));
+                clientHandler.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
+    private static class ClientHandler implements Runnable {
+        private Socket clientSocket;
+
+        public ClientHandler(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+        }
+
+        @Override
+        public void run() {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                 PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true)) {
+
+                // Step 2.1
+                System.out.println("Accepted connection from: " + clientSocket.getInetAddress());
+
+                // Step 2.2
+                writer.println("2001040210"); // Your [Student_ID]
+
+                // Step 2.3
+                String clientReply = reader.readLine();
+                System.out.println("Received from client: " + clientReply);
+
+                // Step 2.4
+                receiveFile(clientSocket);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void receiveFile(Socket clientSocket) {
+            try (InputStream inputStream = clientSocket.getInputStream();
+                 FileOutputStream fileOutputStream = new FileOutputStream("C:\\NPR\\toReceive\\java.docx")) {
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    fileOutputStream.write(buffer, 0, bytesRead);
+                }
+
+                System.out.println("File received successfully.");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+Client:
+import java.io.*;
+import java.net.*;
+import java.math.BigInteger;
 
-public class UDPClient {
+public class TCPClient {
+    private static final int PORT = 60210; // 60abc where abc is the last 3 digits of your student ID
+
     public static void main(String[] args) {
-        try {
-            DatagramSocket socket = new DatagramSocket();
+        try (Socket socket = new Socket("localhost", PORT);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             PrintWriter writer = new PrintWriter(socket.getOutputStream(), true)) {
 
-            // Server address and port
-            InetAddress serverAddress = InetAddress.getByName("localhost");
-            int serverPort = 210;
+            // Step 2
+            String serverMessage = reader.readLine();
+            System.out.println("Received from server: " + serverMessage);
 
-            // Step 1: Send Student_ID to server
-            String studentID = "2001040210"; // Your student ID
-            byte[] sendData = studentID.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
-            socket.send(sendPacket);
+            // Step 3
+            BigInteger studentIdCube = new BigInteger(serverMessage).pow(3);
+            writer.println(studentIdCube.toString());
 
-            // Step 2: Receive the first reply from server (2x[Student_ID])
-            byte[] receiveData = new byte[1024];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            socket.receive(receivePacket);
-            String serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            System.out.println("Received from server: " + serverResponse);
+            // Step 4
+            sendFile(socket);
 
-            // Step 3: Continue the loop for user input
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            while (true) {
-                System.out.print("Enter a message: ");
-                String message = reader.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-                // Send user input to server
-                sendData = message.getBytes();
-                sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
-                socket.send(sendPacket);
+    private static void sendFile(Socket socket) {
+        try (OutputStream outputStream = socket.getOutputStream();
+             FileInputStream fileInputStream = new FileInputStream("C:\\NPR\\toSend\\java.docx")) {
 
-                // Receive and print the server's response
-                receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                socket.receive(receivePacket);
-                serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                System.out.println("Received from server: " + serverResponse);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
             }
+
+            System.out.println("File sent successfully.");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
